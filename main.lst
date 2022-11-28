@@ -1,0 +1,687 @@
+
+main.elf:     file format elf32-littlearm
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .stack        00001000  20000000  20000000  00020000  2**0
+                  ALLOC
+  1 .text         000000c4  00000000  00000000  00010000  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  2 .rodata       00000000  000000c4  000000c4  00011004  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+  3 .data         00000004  20001000  000000c4  00011000  2**2
+                  CONTENTS, ALLOC, LOAD, DATA
+  4 .bss          00000004  20001004  000000c8  00011004  2**2
+                  ALLOC
+  5 .debug_line   000000f7  00000000  00000000  00011004  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+  6 .debug_line_str 0000002e  00000000  00000000  000110fb  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+  7 .debug_info   00000134  00000000  00000000  00011129  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+  8 .debug_abbrev 00000086  00000000  00000000  0001125d  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+  9 .debug_aranges 00000040  00000000  00000000  000112e8  2**3
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+ 10 .debug_str    000001a4  00000000  00000000  00011328  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+ 11 .debug_frame  0000002c  00000000  00000000  000114cc  2**2
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+
+Disassembly of section .stack:
+
+20000000 <_sstack>:
+	...
+
+Disassembly of section .text:
+
+00000000 <vectors>:
+   0:	20001000 	andcs	r1, r0, r0
+   4:	00000041 	andeq	r0, r0, r1, asr #32
+   8:	0000006f 	andeq	r0, r0, pc, rrx
+   c:	00000071 	andeq	r0, r0, r1, ror r0
+  10:	00000073 	andeq	r0, r0, r3, ror r0
+  14:	00000075 	andeq	r0, r0, r5, ror r0
+  18:	00000077 	andeq	r0, r0, r7, ror r0
+	...
+  2c:	00000079 	andeq	r0, r0, r9, ror r0
+	...
+  38:	0000007b 	andeq	r0, r0, fp, ror r0
+  3c:	0000007d 	andeq	r0, r0, sp, ror r0
+
+00000040 <reset_handler>:
+
+.weak reset_handler
+.type reset_handler, %function
+reset_handler:
+_copy_data:
+    ldr r1, =_sidata
+  40:	490f      	ldr	r1, [pc, #60]	; (80 <systick_handler+0x4>)
+    ldr r2, =_sdata
+  42:	4a10      	ldr	r2, [pc, #64]	; (84 <systick_handler+0x8>)
+    ldr r3, =_edata
+  44:	4b10      	ldr	r3, [pc, #64]	; (88 <systick_handler+0xc>)
+    cmp r2, r3 /* is there any data to copy? */
+  46:	429a      	cmp	r2, r3
+    bcs _zero_bss /* no data to copy, proceed to zero_bss */
+  48:	d205      	bcs.n	56 <_zero_bss>
+
+0000004a <_copy_data_loop>:
+_copy_data_loop:
+    /* copy a word and advance the pointers */
+    ldr r0, [r1]
+  4a:	6808      	ldr	r0, [r1, #0]
+    str r0, [r2]
+  4c:	6010      	str	r0, [r2, #0]
+    adds r1, r1, #4
+  4e:	3104      	adds	r1, #4
+    adds r2, r2, #4
+  50:	3204      	adds	r2, #4
+    cmp r2, r3
+  52:	429a      	cmp	r2, r3
+    bcc _copy_data_loop
+  54:	d3f9      	bcc.n	4a <_copy_data_loop>
+
+00000056 <_zero_bss>:
+_zero_bss:
+    movs r0, #0
+  56:	2000      	movs	r0, #0
+    ldr r1, =_sbss
+  58:	490c      	ldr	r1, [pc, #48]	; (8c <systick_handler+0x10>)
+    ldr r2, =_ebss
+  5a:	4a0d      	ldr	r2, [pc, #52]	; (90 <systick_handler+0x14>)
+    cmp r1, r2
+  5c:	4291      	cmp	r1, r2
+    bcs _init
+  5e:	d203      	bcs.n	68 <_init>
+
+00000060 <_zero_bss_loop>:
+_zero_bss_loop:
+    /* zero a word and advance the pointer */
+    str r0, [r1]
+  60:	6008      	str	r0, [r1, #0]
+    adds r1, r1, #4
+  62:	3104      	adds	r1, #4
+    cmp r1, r2
+  64:	4291      	cmp	r1, r2
+    bcc _zero_bss_loop
+  66:	d3fb      	bcc.n	60 <_zero_bss_loop>
+
+00000068 <_init>:
+_init:
+    bl main /* call application's entry point */
+  68:	f000 f814 	bl	94 <main>
+
+0000006c <default_handler>:
+
+.thumb_func
+.weak default_handler
+.type default_handler, %function
+default_handler:
+	b default_handler
+  6c:	e7e8      	b.n	40 <reset_handler>
+
+0000006e <nmi_handler>:
+/* rename to match all the handlers */
+.thumb_func
+.weak nmi_handler
+.type nmi_handler, %function
+nmi_handler:
+	b nmi_handler
+  6e:	e7e7      	b.n	40 <reset_handler>
+
+00000070 <hard_fault_handler>:
+
+.thumb_func
+.weak hard_fault_handler
+.type hard_fault_handler, %function
+hard_fault_handler:
+	b hard_fault_handler
+  70:	e7e6      	b.n	40 <reset_handler>
+
+00000072 <memory_management_fault_handler>:
+
+.thumb_func
+.weak memory_management_fault_handler
+.type memory_management_fault_handler, %function
+memory_management_fault_handler:
+	b memory_management_fault_handler
+  72:	e7e5      	b.n	40 <reset_handler>
+
+00000074 <bus_fault_handler>:
+
+.thumb_func
+.weak bus_fault_handler
+.type bus_fault_handler, %function
+bus_fault_handler:
+	b bus_fault_handler
+  74:	e7e4      	b.n	40 <reset_handler>
+
+00000076 <usage_fault_handler>:
+
+.thumb_func
+.weak usage_fault_handler
+.type usage_fault_handler, %function
+usage_fault_handler:
+	b usage_fault_handler
+  76:	e7e3      	b.n	40 <reset_handler>
+
+00000078 <svc_handler>:
+
+.thumb_func
+.weak svc_handler
+.type svc_handler, %function
+svc_handler:
+	b svc_handler
+  78:	e7e2      	b.n	40 <reset_handler>
+
+0000007a <pendsv_handler>:
+
+.thumb_func
+.weak pendsv_handler
+.type pendsv_handler, %function
+pendsv_handler:
+	b pendsv_handler
+  7a:	e7e1      	b.n	40 <reset_handler>
+
+0000007c <systick_handler>:
+
+.thumb_func
+.weak systick_handler
+.type systick_handler, %function
+systick_handler:
+	b systick_handler
+  7c:	e7e0      	b.n	40 <reset_handler>
+  7e:	00c40000 	sbceq	r0, r4, r0
+    ldr r1, =_sidata
+  82:	10000000 	andne	r0, r0, r0
+    ldr r2, =_sdata
+  86:	10042000 	andne	r2, r4, r0
+    ldr r3, =_edata
+  8a:	10042000 	andne	r2, r4, r0
+    ldr r1, =_sbss
+  8e:	10082000 	andne	r2, r8, r0
+    ldr r2, =_ebss
+  92:	 	strlt	r2, [r0]
+
+00000094 <main>:
+#define DIR_OFF 0x514
+#define OUT_OFF 0x504
+#define GPIO_0_DIR ((uint32_t *) (GPIO_BASE + DIR_OFF))
+#define GPIO_0_OUT ((uint32_t *) (GPIO_BASE + OUT_OFF))
+
+int main() {
+  94:	b580      	push	{r7, lr}
+  96:	af00      	add	r7, sp, #0
+	x = y + y;	
+  98:	4b06      	ldr	r3, [pc, #24]	; (b4 <main+0x20>)
+  9a:	681b      	ldr	r3, [r3, #0]
+  9c:	005a      	lsls	r2, r3, #1
+  9e:	4b06      	ldr	r3, [pc, #24]	; (b8 <main+0x24>)
+  a0:	601a      	str	r2, [r3, #0]
+	*GPIO_0_DIR = 0x1E000;
+  a2:	4b06      	ldr	r3, [pc, #24]	; (bc <main+0x28>)
+  a4:	22f0      	movs	r2, #240	; 0xf0
+  a6:	0252      	lsls	r2, r2, #9
+  a8:	601a      	str	r2, [r3, #0]
+	*GPIO_0_OUT = 0x18000;	
+  aa:	4b05      	ldr	r3, [pc, #20]	; (c0 <main+0x2c>)
+  ac:	22c0      	movs	r2, #192	; 0xc0
+  ae:	0252      	lsls	r2, r2, #9
+  b0:	601a      	str	r2, [r3, #0]
+	while (1) {
+  b2:	e7fe      	b.n	b2 <main+0x1e>
+  b4:	20001000 	andcs	r1, r0, r0
+  b8:	20001004 	andcs	r1, r0, r4
+  bc:	50000514 	andpl	r0, r0, r4, lsl r5
+  c0:	50000504 	andpl	r0, r0, r4, lsl #10
+
+Disassembly of section .data:
+
+20001000 <y>:
+20001000:	00000003 	andeq	r0, r0, r3
+
+Disassembly of section .bss:
+
+20001004 <x>:
+int x;
+20001004:	00000000 	andeq	r0, r0, r0
+
+Disassembly of section .debug_line:
+
+00000000 <.debug_line>:
+   0:	00000068 	andeq	r0, r0, r8, rrx
+   4:	00040005 	andeq	r0, r4, r5
+   8:	0000002a 	andeq	r0, r0, sl, lsr #32
+   c:	fb010102 	blx	4041e <_stack_size+0x3f41e>
+  10:	01000d0e 	tsteq	r0, lr, lsl #26
+  14:	00010101 	andeq	r0, r1, r1, lsl #2
+  18:	00010000 	andeq	r0, r1, r0
+  1c:	01010100 	mrseq	r0, (UNDEF: 17)
+  20:	0000011f 	andeq	r0, r0, pc, lsl r1
+  24:	01020000 	mrseq	r0, (UNDEF: 2)
+  28:	020f021f 	andeq	r0, pc, #-268435455	; 0xf0000001
+  2c:	00000024 	andeq	r0, r0, r4, lsr #32
+  30:	00002400 	andeq	r2, r0, r0, lsl #8
+  34:	05000000 	streq	r0, [r0, #-0]
+  38:	00004002 	andeq	r4, r0, r2
+  3c:	010a0300 	mrseq	r0, (UNDEF: 58)
+    ldr r1, =_sidata
+  40:	21212121 			; <UNDEFINED> instruction: 0x21212121
+    ldr r3, =_edata
+  44:	21212123 			; <UNDEFINED> instruction: 0x21212123
+    bcs _zero_bss /* no data to copy, proceed to zero_bss */
+  48:	21222121 			; <UNDEFINED> instruction: 0x21222121
+    str r0, [r2]
+  4c:	23212121 			; <UNDEFINED> instruction: 0x23212121
+    adds r2, r2, #4
+  50:	22212121 	eorcs	r2, r1, #1073741832	; 0x40000008
+    bcc _copy_data_loop
+  54:	27272835 			; <UNDEFINED> instruction: 0x27272835
+    ldr r1, =_sbss
+  58:	27272727 	strcs	r2, [r7, -r7, lsr #14]!
+    cmp r1, r2
+  5c:	7fa60327 	svcvc	0x00a60327
+    str r0, [r1]
+  60:	032f2f2e 			; <UNDEFINED> instruction: 0x032f2f2e
+    cmp r1, r2
+  64:	022f2e0d 	eoreq	r2, pc, #13, 28	; 0xd0
+    bl main /* call application's entry point */
+  68:	01010002 	tsteq	r1, r2
+	b default_handler
+  6c:	00000087 	andeq	r0, r0, r7, lsl #1
+	b hard_fault_handler
+  70:	00570003 	subseq	r0, r7, r3
+	b bus_fault_handler
+  74:	01020000 	mrseq	r0, (UNDEF: 2)
+	b svc_handler
+  78:	000d0efb 	strdeq	r0, [sp], -fp
+	b systick_handler
+  7c:	01010101 	tsteq	r1, r1, lsl #2
+    ldr r1, =_sidata
+  80:	01000000 	mrseq	r0, (UNDEF: 0)
+    ldr r2, =_sdata
+  84:	2f010000 	svccs	0x00010000
+    ldr r3, =_edata
+  88:	2f727375 	svccs	0x00727375
+    ldr r1, =_sbss
+  8c:	2f62696c 	svccs	0x0062696c
+    ldr r2, =_ebss
+  90:	2f636367 	svccs	0x00636367
+int main() {
+  94:	2d6d7261 	sfmcs	f7, 2, [sp, #-388]!	; 0xfffffe7c
+	x = y + y;	
+  98:	656e6f6e 	strbvs	r6, [lr, #-3950]!	; 0xfffff092
+  9c:	6261652d 	rsbvs	r6, r1, #188743680	; 0xb400000
+  a0:	32312f69 	eorscc	r2, r1, #420	; 0x1a4
+	*GPIO_0_DIR = 0x1E000;
+  a4:	302e322e 	eorcc	r3, lr, lr, lsr #4
+  a8:	636e692f 	cmnvs	lr, #770048	; 0xbc000
+	*GPIO_0_OUT = 0x18000;	
+  ac:	6564756c 	strbvs	r7, [r4, #-1388]!	; 0xfffffa94
+  b0:	616d0000 	cmnvs	sp, r0
+	while (1) {
+  b4:	632e6e69 			; <UNDEFINED> instruction: 0x632e6e69
+  b8:	00000000 	andeq	r0, r0, r0
+  bc:	69647473 	stmdbvs	r4!, {r0, r1, r4, r5, r6, sl, ip, sp, lr}^
+  c0:	672d746e 	strvs	r7, [sp, -lr, ror #8]!
+  c4:	682e6363 	stmdavs	lr!, {r0, r1, r5, r6, r8, r9, sp, lr}
+  c8:	00000100 	andeq	r0, r0, r0, lsl #2
+  cc:	000c0500 	andeq	r0, ip, r0, lsl #10
+  d0:	00940205 	addseq	r0, r4, r5, lsl #4
+  d4:	0b030000 	bleq	c00dc <_stack_size+0xbf0dc>
+  d8:	2f080501 	svccs	0x00080501
+  dc:	053c0405 	ldreq	r0, [ip, #-1029]!	; 0xfffffbfb
+  e0:	0e052f02 	cdpeq	15, 0, cr2, cr5, cr2, {0}
+  e4:	3d020520 	cfstr32cc	mvfx0, [r2, #-128]	; 0xffffff80
+  e8:	05200e05 	streq	r0, [r0, #-3589]!	; 0xfffff1fb
+  ec:	04020008 	streq	r0, [r2], #-8
+  f0:	09023d01 	stmdbeq	r2, {r0, r8, sl, fp, ip, sp}
+  f4:	Address 0x00000000000000f4 is out of bounds.
+
+
+Disassembly of section .debug_line_str:
+
+00000000 <.debug_line_str>:
+   0:	6d6f682f 	stclvs	8, cr6, [pc, #-188]!	; ffffff4c <_esram+0xdffbff4c>
+   4:	65622f65 	strbvs	r2, [r2, #-3941]!	; 0xfffff09b
+   8:	63732f6e 	cmnvs	r3, #440	; 0x1b8
+   c:	6c6f6f68 	stclvs	15, cr6, [pc], #-416	; fffffe74 <_esram+0xdffbfe74>
+  10:	6e656d2f 	cdpvs	13, 6, cr6, cr5, cr15, {1}
+  14:	726e2f67 	rsbvc	r2, lr, #412	; 0x19c
+  18:	38323566 	ldmdacc	r2!, {r1, r2, r5, r6, r8, sl, ip, sp}
+  1c:	6c2d3034 	stcvs	0, cr3, [sp], #-208	; 0xffffff30
+  20:	006b6e69 	rsbeq	r6, fp, r9, ror #28
+  24:	72617473 	rsbvc	r7, r1, #1929379840	; 0x73000000
+  28:	2e707574 	mrccs	5, 3, r7, cr0, cr4, {3}
+  2c:	Address 0x000000000000002c is out of bounds.
+
+
+Disassembly of section .debug_info:
+
+00000000 <.debug_info>:
+   0:	00000085 	andeq	r0, r0, r5, lsl #1
+   4:	04010005 	streq	r0, [r1], #-5
+   8:	00000000 	andeq	r0, r0, r0
+   c:	00000001 	andeq	r0, r0, r1
+  10:	00004000 	andeq	r4, r0, r0
+  14:	00005400 	andeq	r5, r0, r0, lsl #8
+  18:	000a0000 	andeq	r0, sl, r0
+  1c:	002e0000 	eoreq	r0, lr, r0
+  20:	80010000 	andhi	r0, r1, r0
+  24:	00003a02 	andeq	r3, r0, r2, lsl #20
+  28:	00004100 	andeq	r4, r0, r0, lsl #2
+  2c:	48022c00 	stmdami	r2, {sl, fp, sp}
+  30:	6d000000 	stcvs	0, cr0, [r0, #-0]
+  34:	02000000 	andeq	r0, r0, #0
+  38:	00005802 	andeq	r5, r0, r2, lsl #16
+  3c:	00006f00 	andeq	r6, r0, r0, lsl #30
+    ldr r1, =_sidata
+  40:	64020200 	strvs	r0, [r2], #-512	; 0xfffffe00
+    ldr r3, =_edata
+  44:	71000000 	mrsvc	r0, (UNDEF: 0)
+    bcs _zero_bss /* no data to copy, proceed to zero_bss */
+  48:	02000000 	andeq	r0, r0, #0
+    str r0, [r2]
+  4c:	00007702 	andeq	r7, r0, r2, lsl #14
+    adds r2, r2, #4
+  50:	00007300 	andeq	r7, r0, r0, lsl #6
+    bcc _copy_data_loop
+  54:	97020200 	strls	r0, [r2, -r0, lsl #4]
+    ldr r1, =_sbss
+  58:	75000000 	strvc	r0, [r0, #-0]
+    cmp r1, r2
+  5c:	02000000 	andeq	r0, r0, #0
+    str r0, [r1]
+  60:	0000a902 	andeq	sl, r0, r2, lsl #18
+    cmp r1, r2
+  64:	00007700 	andeq	r7, r0, r0, lsl #14
+    bl main /* call application's entry point */
+  68:	bd020200 	sfmlt	f0, 4, [r2, #-0]
+	b default_handler
+  6c:	79000000 	stmdbvc	r0, {}	; <UNPREDICTABLE>
+	b hard_fault_handler
+  70:	02000000 	andeq	r0, r0, #0
+	b bus_fault_handler
+  74:	0000c902 	andeq	ip, r0, r2, lsl #18
+	b svc_handler
+  78:	00007b00 	andeq	r7, r0, r0, lsl #22
+	b systick_handler
+  7c:	d8020200 	stmdale	r2, {r9}
+    ldr r1, =_sidata
+  80:	7d000000 	stcvc	0, cr0, [r0, #-0]
+    ldr r2, =_sdata
+  84:	02000000 	andeq	r0, r0, #0
+    ldr r3, =_edata
+  88:	0000a700 	andeq	sl, r0, r0, lsl #14
+    ldr r1, =_sbss
+  8c:	01000500 	tsteq	r0, r0, lsl #10
+    ldr r2, =_ebss
+  90:	00001f04 	andeq	r1, r0, r4, lsl #30
+int main() {
+  94:	00fd0300 	rscseq	r0, sp, r0, lsl #6
+	x = y + y;	
+  98:	f61d0000 			; <UNDEFINED> instruction: 0xf61d0000
+  9c:	0a000000 	beq	a4 <main+0x10>
+  a0:	94000000 	strls	r0, [r0], #-0
+	*GPIO_0_DIR = 0x1E000;
+  a4:	30000000 	andcc	r0, r0, r0
+  a8:	6c000000 	stcvs	0, cr0, [r0], {-0}
+	*GPIO_0_OUT = 0x18000;	
+  ac:	01000000 	mrseq	r0, (UNDEF: 0)
+  b0:	016d0601 	cmneq	sp, r1, lsl #12
+	while (1) {
+  b4:	02010000 	andeq	r0, r1, #0
+  b8:	00019a05 	andeq	r9, r1, r5, lsl #20
+  bc:	05040100 	streq	r0, [r4, #-256]	; 0xffffff00
+  c0:	000000ed 	andeq	r0, r0, sp, ror #1
+  c4:	e8050801 	stmda	r5, {r0, fp}
+  c8:	01000000 	mrseq	r0, (UNDEF: 0)
+  cc:	016b0801 	cmneq	fp, r1, lsl #16
+  d0:	02010000 	andeq	r0, r1, #0
+  d4:	00018707 	andeq	r8, r1, r7, lsl #14
+  d8:	017e0400 	cmneq	lr, r0, lsl #8
+  dc:	34020000 	strcc	r0, [r2], #-0
+  e0:	00005c19 	andeq	r5, r0, r9, lsl ip
+  e4:	07040100 	streq	r0, [r4, -r0, lsl #2]
+  e8:	00000159 	andeq	r0, r0, r9, asr r1
+  ec:	54070801 	strpl	r0, [r7], #-2049	; 0xfffff7ff
+  f0:	05000001 	streq	r0, [r0, #-1]
+  f4:	6e690504 	cdpvs	5, 6, cr0, cr9, cr4, {0}
+  f8:	04010074 	streq	r0, [r1], #-116	; 0xffffff8c
+  fc:	00015e07 	andeq	r5, r1, r7, lsl #28
+ 100:	00780200 	rsbseq	r0, r8, r0, lsl #4
+ 104:	00006a03 	andeq	r6, r0, r3, lsl #20
+ 108:	04030500 	streq	r0, [r3], #-1280	; 0xfffffb00
+ 10c:	02200010 	eoreq	r0, r0, #16
+ 110:	6a040079 	bvs	1002fc <_eflash+0x2fc>
+ 114:	05000000 	streq	r0, [r0, #-0]
+ 118:	00100003 	andseq	r0, r0, r3
+ 11c:	01790620 	cmneq	r9, r0, lsr #12
+ 120:	0c010000 	stceq	0, cr0, [r1], {-0}
+ 124:	00006a05 	andeq	r6, r0, r5, lsl #20
+ 128:	00009400 	andeq	r9, r0, r0, lsl #8
+ 12c:	00003000 	andeq	r3, r0, r0
+ 130:	009c0100 	addseq	r0, ip, r0, lsl #2
+
+Disassembly of section .debug_abbrev:
+
+00000000 <.debug_abbrev>:
+   0:	10011101 	andne	r1, r1, r1, lsl #2
+   4:	12011117 	andne	r1, r1, #-1073741819	; 0xc0000005
+   8:	1b0e030f 	blne	380c4c <_eflash+0x280c4c>
+   c:	130e250e 	movwne	r2, #58638	; 0xe50e
+  10:	02000005 	andeq	r0, r0, #5
+  14:	0e03002e 	cdpeq	0, 0, cr0, cr3, cr14, {1}
+  18:	0f120111 	svceq	0x00120111
+  1c:	01000000 	mrseq	r0, (UNDEF: 0)
+  20:	0b0b0024 	bleq	2c00b8 <_eflash+0x1c00b8>
+  24:	0e030b3e 	vmoveq.16	d3[0], r0
+  28:	34020000 	strcc	r0, [r2], #-0
+  2c:	3a080300 	bcc	200c34 <_eflash+0x100c34>
+  30:	0b3b0121 	bleq	ec04bc <_eflash+0xdc04bc>
+  34:	49052139 	stmdbmi	r5, {r0, r3, r4, r5, r8, sp}
+  38:	02193f13 	andseq	r3, r9, #19, 30	; 0x4c
+  3c:	03000018 	movweq	r0, #24
+    ldr r1, =_sidata
+  40:	0e250111 	mcreq	1, 1, r0, cr5, cr1, {0}
+    ldr r3, =_edata
+  44:	0e030b13 	vmoveq.32	d3[0], r0
+    bcs _zero_bss /* no data to copy, proceed to zero_bss */
+  48:	01110e1b 	tsteq	r1, fp, lsl lr
+    str r0, [r2]
+  4c:	17100612 			; <UNDEFINED> instruction: 0x17100612
+    adds r2, r2, #4
+  50:	16040000 	strne	r0, [r4], -r0
+    bcc _copy_data_loop
+  54:	3a0e0300 	bcc	380c5c <_eflash+0x280c5c>
+    ldr r1, =_sbss
+  58:	390b3b0b 	stmdbcc	fp, {r0, r1, r3, r8, r9, fp, ip, sp}
+    cmp r1, r2
+  5c:	0013490b 	andseq	r4, r3, fp, lsl #18
+    str r0, [r1]
+  60:	00240500 	eoreq	r0, r4, r0, lsl #10
+    cmp r1, r2
+  64:	0b3e0b0b 	bleq	f82c98 <_eflash+0xe82c98>
+    bl main /* call application's entry point */
+  68:	00000803 	andeq	r0, r0, r3, lsl #16
+	b default_handler
+  6c:	3f002e06 	svccc	0x00002e06
+	b hard_fault_handler
+  70:	3a0e0319 	bcc	380cdc <_eflash+0x280cdc>
+	b bus_fault_handler
+  74:	390b3b0b 	stmdbcc	fp, {r0, r1, r3, r8, r9, fp, ip, sp}
+	b svc_handler
+  78:	1113490b 	tstne	r3, fp, lsl #18
+	b systick_handler
+  7c:	40061201 	andmi	r1, r6, r1, lsl #4
+    ldr r1, =_sidata
+  80:	00197a18 	andseq	r7, r9, r8, lsl sl
+	...
+
+Disassembly of section .debug_aranges:
+
+00000000 <.debug_aranges>:
+   0:	0000001c 	andeq	r0, r0, ip, lsl r0
+   4:	00000002 	andeq	r0, r0, r2
+   8:	00040000 	andeq	r0, r4, r0
+   c:	00000000 	andeq	r0, r0, r0
+  10:	00000040 	andeq	r0, r0, r0, asr #32
+  14:	00000054 	andeq	r0, r0, r4, asr r0
+	...
+  20:	0000001c 	andeq	r0, r0, ip, lsl r0
+  24:	00890002 	addeq	r0, r9, r2
+  28:	00040000 	andeq	r0, r4, r0
+  2c:	00000000 	andeq	r0, r0, r0
+  30:	00000094 	muleq	r0, r4, r0
+  34:	00000030 	andeq	r0, r0, r0, lsr r0
+	...
+
+Disassembly of section .debug_str:
+
+00000000 <.debug_str>:
+   0:	72617473 	rsbvc	r7, r1, #1929379840	; 0x73000000
+   4:	2e707574 	mrccs	5, 3, r7, cr0, cr4, {3}
+   8:	682f0073 	stmdavs	pc!, {r0, r1, r4, r5, r6}	; <UNPREDICTABLE>
+   c:	2f656d6f 	svccs	0x00656d6f
+  10:	2f6e6562 	svccs	0x006e6562
+  14:	6f686373 	svcvs	0x00686373
+  18:	6d2f6c6f 	stcvs	12, cr6, [pc, #-444]!	; fffffe64 <_esram+0xdffbfe64>
+  1c:	2f676e65 	svccs	0x00676e65
+  20:	3566726e 	strbcc	r7, [r6, #-622]!	; 0xfffffd92
+  24:	30343832 	eorscc	r3, r4, r2, lsr r8
+  28:	6e696c2d 	cdpvs	12, 6, cr6, cr9, cr13, {1}
+  2c:	4e47006b 	cdpmi	0, 4, cr0, cr7, cr11, {3}
+  30:	53412055 	movtpl	r2, #4181	; 0x1055
+  34:	332e3220 			; <UNDEFINED> instruction: 0x332e3220
+  38:	65720039 	ldrbvs	r0, [r2, #-57]!	; 0xffffffc7
+  3c:	5f746573 	svcpl	0x00746573
+  40:	646e6168 	strbtvs	r6, [lr], #-360	; 0xfffffe98
+    ldr r3, =_edata
+  44:	0072656c 	rsbseq	r6, r2, ip, ror #10
+    bcs _zero_bss /* no data to copy, proceed to zero_bss */
+  48:	61666564 	cmnvs	r6, r4, ror #10
+    str r0, [r2]
+  4c:	5f746c75 	svcpl	0x00746c75
+    adds r2, r2, #4
+  50:	646e6168 	strbtvs	r6, [lr], #-360	; 0xfffffe98
+    bcc _copy_data_loop
+  54:	0072656c 	rsbseq	r6, r2, ip, ror #10
+    ldr r1, =_sbss
+  58:	5f696d6e 	svcpl	0x00696d6e
+    cmp r1, r2
+  5c:	646e6168 	strbtvs	r6, [lr], #-360	; 0xfffffe98
+    str r0, [r1]
+  60:	0072656c 	rsbseq	r6, r2, ip, ror #10
+    cmp r1, r2
+  64:	64726168 	ldrbtvs	r6, [r2], #-360	; 0xfffffe98
+    bl main /* call application's entry point */
+  68:	7561665f 	strbvc	r6, [r1, #-1631]!	; 0xfffff9a1
+	b default_handler
+  6c:	685f746c 	ldmdavs	pc, {r2, r3, r5, r6, sl, ip, sp, lr}^	; <UNPREDICTABLE>
+	b hard_fault_handler
+  70:	6c646e61 	stclvs	14, cr6, [r4], #-388	; 0xfffffe7c
+	b bus_fault_handler
+  74:	6d007265 	sfmvs	f7, 4, [r0, #-404]	; 0xfffffe6c
+	b svc_handler
+  78:	726f6d65 	rsbvc	r6, pc, #6464	; 0x1940
+	b systick_handler
+  7c:	616d5f79 	smcvs	54777	; 0xd5f9
+    ldr r1, =_sidata
+  80:	6567616e 	strbvs	r6, [r7, #-366]!	; 0xfffffe92
+    ldr r2, =_sdata
+  84:	746e656d 	strbtvc	r6, [lr], #-1389	; 0xfffffa93
+    ldr r3, =_edata
+  88:	7561665f 	strbvc	r6, [r1, #-1631]!	; 0xfffff9a1
+    ldr r1, =_sbss
+  8c:	685f746c 	ldmdavs	pc, {r2, r3, r5, r6, sl, ip, sp, lr}^	; <UNPREDICTABLE>
+    ldr r2, =_ebss
+  90:	6c646e61 	stclvs	14, cr6, [r4], #-388	; 0xfffffe7c
+int main() {
+  94:	62007265 	andvs	r7, r0, #1342177286	; 0x50000006
+	x = y + y;	
+  98:	665f7375 			; <UNDEFINED> instruction: 0x665f7375
+  9c:	746c7561 	strbtvc	r7, [ip], #-1377	; 0xfffffa9f
+  a0:	6e61685f 	mcrvs	8, 3, r6, cr1, cr15, {2}
+	*GPIO_0_DIR = 0x1E000;
+  a4:	72656c64 	rsbvc	r6, r5, #100, 24	; 0x6400
+  a8:	61737500 	cmnvs	r3, r0, lsl #10
+	*GPIO_0_OUT = 0x18000;	
+  ac:	665f6567 	ldrbvs	r6, [pc], -r7, ror #10
+  b0:	746c7561 	strbtvc	r7, [ip], #-1377	; 0xfffffa9f
+	while (1) {
+  b4:	6e61685f 	mcrvs	8, 3, r6, cr1, cr15, {2}
+  b8:	72656c64 	rsbvc	r6, r5, #100, 24	; 0x6400
+  bc:	63767300 	cmnvs	r6, #0, 6
+  c0:	6e61685f 	mcrvs	8, 3, r6, cr1, cr15, {2}
+  c4:	72656c64 	rsbvc	r6, r5, #100, 24	; 0x6400
+  c8:	6e657000 	cdpvs	0, 6, cr7, cr5, cr0, {0}
+  cc:	5f767364 	svcpl	0x00767364
+  d0:	646e6168 	strbtvs	r6, [lr], #-360	; 0xfffffe98
+  d4:	0072656c 	rsbseq	r6, r2, ip, ror #10
+  d8:	74737973 	ldrbtvc	r7, [r3], #-2419	; 0xfffff68d
+  dc:	5f6b6369 	svcpl	0x006b6369
+  e0:	646e6168 	strbtvs	r6, [lr], #-360	; 0xfffffe98
+  e4:	0072656c 	rsbseq	r6, r2, ip, ror #10
+  e8:	676e6f6c 	strbvs	r6, [lr, -ip, ror #30]!
+  ec:	6e6f6c20 	cdpvs	12, 6, cr6, cr15, cr0, {1}
+  f0:	6e692067 	cdpvs	0, 6, cr2, cr9, cr7, {3}
+  f4:	616d0074 	smcvs	53252	; 0xd004
+  f8:	632e6e69 			; <UNDEFINED> instruction: 0x632e6e69
+  fc:	554e4700 	strbpl	r4, [lr, #-1792]	; 0xfffff900
+ 100:	37314320 	ldrcc	r4, [r1, -r0, lsr #6]!
+ 104:	2e323120 	rsfcssp	f3, f2, f0
+ 108:	20302e32 	eorscs	r2, r0, r2, lsr lr
+ 10c:	68746d2d 	ldmdavs	r4!, {r0, r2, r3, r5, r8, sl, fp, sp, lr}^
+ 110:	20626d75 	rsbcs	r6, r2, r5, ror sp
+ 114:	70636d2d 	rsbvc	r6, r3, sp, lsr #26
+ 118:	72613d75 	rsbvc	r3, r1, #7488	; 0x1d40
+ 11c:	6474376d 	ldrbtvs	r3, [r4], #-1901	; 0xfffff893
+ 120:	2d20696d 			; <UNDEFINED> instruction: 0x2d20696d
+ 124:	6f6c666d 	svcvs	0x006c666d
+ 128:	612d7461 			; <UNDEFINED> instruction: 0x612d7461
+ 12c:	733d6962 	teqvc	sp, #1605632	; 0x188000
+ 130:	2074666f 	rsbscs	r6, r4, pc, ror #12
+ 134:	72616d2d 	rsbvc	r6, r1, #2880	; 0xb40
+ 138:	613d6863 	teqvs	sp, r3, ror #16
+ 13c:	34766d72 	ldrbtcc	r6, [r6], #-3442	; 0xfffff28e
+ 140:	672d2074 			; <UNDEFINED> instruction: 0x672d2074
+ 144:	66662d20 	strbtvs	r2, [r6], -r0, lsr #26
+ 148:	73656572 	cmnvc	r5, #478150656	; 0x1c800000
+ 14c:	646e6174 	strbtvs	r6, [lr], #-372	; 0xfffffe8c
+ 150:	00676e69 	rsbeq	r6, r7, r9, ror #28
+ 154:	676e6f6c 	strbvs	r6, [lr, -ip, ror #30]!
+ 158:	6e6f6c20 	cdpvs	12, 6, cr6, cr15, cr0, {1}
+ 15c:	6e752067 	cdpvs	0, 7, cr2, cr5, cr7, {3}
+ 160:	6e676973 			; <UNDEFINED> instruction: 0x6e676973
+ 164:	69206465 	stmdbvs	r0!, {r0, r2, r5, r6, sl, sp, lr}
+ 168:	7500746e 	strvc	r7, [r0, #-1134]	; 0xfffffb92
+ 16c:	6769736e 	strbvs	r7, [r9, -lr, ror #6]!
+ 170:	2064656e 	rsbcs	r6, r4, lr, ror #10
+ 174:	72616863 	rsbvc	r6, r1, #6488064	; 0x630000
+ 178:	69616d00 	stmdbvs	r1!, {r8, sl, fp, sp, lr}^
+ 17c:	6975006e 	ldmdbvs	r5!, {r1, r2, r3, r5, r6}^
+ 180:	3233746e 	eorscc	r7, r3, #1845493760	; 0x6e000000
+ 184:	7300745f 	movwvc	r7, #1119	; 0x45f
+ 188:	74726f68 	ldrbtvc	r6, [r2], #-3944	; 0xfffff098
+ 18c:	736e7520 	cmnvc	lr, #32, 10	; 0x8000000
+ 190:	656e6769 	strbvs	r6, [lr, #-1897]!	; 0xfffff897
+ 194:	6e692064 	cdpvs	0, 6, cr2, cr9, cr4, {3}
+ 198:	68730074 	ldmdavs	r3!, {r2, r4, r5, r6}^
+ 19c:	2074726f 	rsbscs	r7, r4, pc, ror #4
+ 1a0:	00746e69 	rsbseq	r6, r4, r9, ror #28
+
+Disassembly of section .debug_frame:
+
+00000000 <.debug_frame>:
+   0:	0000000c 	andeq	r0, r0, ip
+   4:	ffffffff 			; <UNDEFINED> instruction: 0xffffffff
+   8:	7c020001 	stcvc	0, cr0, [r2], {1}
+   c:	000d0c0e 	andeq	r0, sp, lr, lsl #24
+  10:	00000018 	andeq	r0, r0, r8, lsl r0
+  14:	00000000 	andeq	r0, r0, r0
+  18:	00000094 	muleq	r0, r4, r0
+  1c:	00000030 	andeq	r0, r0, r0, lsr r0
+  20:	87080e41 	strhi	r0, [r8, -r1, asr #28]
+  24:	41018e02 	tstmi	r1, r2, lsl #28
+  28:	0000070d 	andeq	r0, r0, sp, lsl #14
