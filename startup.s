@@ -35,6 +35,9 @@ _zero_bss_loop:
     bcc _zero_bss_loop
 _init:
 		/* disable firmware protection here */
+		ldr r1, =0x40000558 /* address of SW APPROTECT DISABLE register */
+		ldr r2, =0x5A /* value to write to disable APPROTECT */
+		str r2, [r1] /* write the value */
     bl main /* call application's entry point */
 .size reset_handler, .-reset_handler
 
@@ -45,7 +48,7 @@ default_handler:
 	b default_handler
 .size default_handler, .-default_handler
 
-/* rename to match all the handlers */
+/* do-nothing handlers for each type of interrupt */
 .thumb_func
 .weak nmi_handler
 .type nmi_handler, %function
