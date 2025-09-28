@@ -10,7 +10,7 @@ int y = 3;
 #define GPIO_0_OUT ((uint32_t *) (GPIO_BASE + OUT_OFF))
 
 // LEDs are mapped to bits 13-16 of GPIO_0_OUT
-
+// testgit1
 void enableLed(int ledNum) {
 	// led numbers are zero-indexed
 	// active-low
@@ -26,7 +26,7 @@ int main() {
 	x = y + y;	
 	*GPIO_0_DIR = 0x1E000;
 	*GPIO_0_OUT = 0x1E000; // disable all LEDS
-	// enableLed(1);
+	enableLed(1);
 	// enableLed(2);
 	// enableLed(3);
 	enableLed(0);
